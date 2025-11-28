@@ -5,13 +5,14 @@ pipeline {
         SONARQUBE_URL = "http://sonarqube:9000"
         SONARQUBE_TOKEN = "sqa_913376b5aa2d32bebbd697018145b89c7f76116e"
         TARGET_URL = "http://172.19.52.116:5000"
+        ZAP_API_KEY = "zap123"
     }
     stages {
         stage('Install Python') {
             steps {
                 sh '''
                     apt update
-                    apt install -y python3 python3-venv python3-pip
+                    apt install -y python3 python3-venv python3-pip curl
                 '''
             }
         }
@@ -55,16 +56,21 @@ pipeline {
             }
         }
         
-        stage('OWASP ZAP Security Scan') {
+        stage('OWASP ZAP Scan') {
             steps {
                 sh '''
                     mkdir -p zap-reports
-                    docker run --rm --network jenkins-net \
-                    -v $(pwd)/zap-reports:/zap/wrk/:rw \
-                    ghcr.io/zaproxy/zaproxy:stable \
-                    zap-baseline.py -t ${TARGET_URL} \
-                    -r zap-report.html \
-                    -I
+                    
+                    echo "Iniciando spider scan..."
+                    curl "http://zap:8090/JSON/spider/action/scan/?url=${TARGET_URL}&apikey=${ZAP_API_KEY}"
+                    sleep 30
+                    
+                    echo "Iniciando active scan..."
+                    curl "http://zap:8090/JSON/ascan/action/scan/?url=${TARGET_URL}&apikey=${ZAP_API_KEY}"
+                    sleep 60
+                    
+                    echo "Generando reporte..."
+                    curl "http://zap:8090/OTHER/core/other/htmlreport/?apikey=${ZAP_API_KEY}" > zap-reports/zap-report.html
                 '''
             }
         }
@@ -88,14 +94,13 @@ pipeline {
                     reportFiles: 'dependency-check-report.html',
                     reportName: 'OWASP Dependency Check Report'
                 ])
-                
                 publishHTML([
                     allowMissing: false,
                     alwaysLinkToLastBuild: true,
                     keepAll: true,
                     reportDir: 'zap-reports',
                     reportFiles: 'zap-report.html',
-                    reportName: 'OWASP ZAP Security Report'
+                    reportName: 'OWASP ZAP Report'
                 ])
             }
         }
