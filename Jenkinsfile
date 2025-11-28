@@ -19,7 +19,7 @@ pipeline {
             steps {
                 sh '''
                     python3 -m pip install --upgrade pip
-                    pip3 install -r requirements.txt --break-system-packages
+                    pip3 install --break-system-packages -r requirements.txt
                 '''
             }
         }
