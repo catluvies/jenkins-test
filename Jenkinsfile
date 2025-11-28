@@ -55,6 +55,20 @@ pipeline {
             }
         }
         
+        stage('OWASP ZAP Security Scan') {
+            steps {
+                sh '''
+                    mkdir -p zap-reports
+                    docker run --rm --network jenkins-net \
+                    -v $(pwd)/zap-reports:/zap/wrk/:rw \
+                    ghcr.io/zaproxy/zaproxy:stable \
+                    zap-baseline.py -t ${TARGET_URL} \
+                    -r zap-report.html \
+                    -I
+                '''
+            }
+        }
+        
         stage('Dependency Check') {
             environment {
                 NVD_API_KEY = credentials('nvdApiKey')
@@ -73,6 +87,15 @@ pipeline {
                     reportDir: 'dependency-check-report',
                     reportFiles: 'dependency-check-report.html',
                     reportName: 'OWASP Dependency Check Report'
+                ])
+                
+                publishHTML([
+                    allowMissing: false,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true,
+                    reportDir: 'zap-reports',
+                    reportFiles: 'zap-report.html',
+                    reportName: 'OWASP ZAP Security Report'
                 ])
             }
         }
