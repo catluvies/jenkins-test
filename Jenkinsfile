@@ -22,20 +22,19 @@ pipeline {
                 '''
             }
         }
-
-        stage('OWASP Dependency-Check') {
-            steps {
-                dependencyCheck additionalArguments: """
-                    --scan .
-                    --format HTML
-                    --format JSON
-                    --nvdApiKey ${env.NVD_API_KEY}
-                    --enableExperimental
-                """, odcInstallation: 'DependencyCheck'
-                
-                dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
-            }
-        }
+    stage('OWASP Dependency-Check') {
+    steps {
+        dependencyCheck additionalArguments: """
+            --scan .
+            --format HTML
+            --format JSON
+            --nvdApiKey 88692ecd-6e70-4f7d-8eaf-5aac53c9f74d
+            --enableExperimental
+        """, odcInstallation: 'DependencyCheck'
+        
+        dependencyCheckPublisher pattern: '**/dependency-check-report.xml'
+    }
+}
 
         stage('SonarQube Analysis') {
             steps {
